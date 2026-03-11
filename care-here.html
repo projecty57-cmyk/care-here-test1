@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>아플땐 여기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --blue: #3182F6;
+      --blue-light: #EBF3FE;
+      --green: #00B493;
+      --green-light: #E8FAF6;
+      --red: #F04452;
+      --red-light: #FEF0F1;
+      --gray-50: #F9FAFB;
+      --gray-100: #F2F4F6;
+      --gray-200: #E5E8EB;
+      --gray-400: #9EA6B2;
+      --gray-600: #6B7684;
+      --gray-800: #333D4B;
+      --gray-900: #191F28;
+      --primary: #fb8890;
+      --primary-light: #FFF0F1;
+      --white: #FFFFFF;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-900);
+      max-width: 375px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ───── TOP NAV ───── */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--white);
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .nav-title {
+      font-size: 18px; font-weight: 700;
+      color: var(--gray-900);
+    }
+    .nav-subtitle {
+      font-size: 12px; color: var(--gray-400);
+      margin-top: 2px;
+    }
+
+    /* ───── TAB BAR ───── */
+    .tab-bar {
+      display: flex; background: var(--white);
+      border-bottom: 1px solid var(--gray-100);
+      padding: 0 20px;
+    }
+    .tab-btn {
+      flex: 1; padding: 12px 0; font-size: 14px; font-weight: 600;
+      color: var(--gray-400); background: none; border: none; cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all 0.2s;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* ───── SEARCH ───── */
+    .search-wrap {
+      padding: 12px 20px;
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--gray-100); border-radius: 10px; padding: 10px 14px;
+    }
+    .search-box svg { flex-shrink: 0; color: var(--gray-400); }
+    .search-box input {
+      flex: 1; background: none; border: none; outline: none;
+      font-size: 14px; color: var(--gray-900); font-family: inherit;
+    }
+    .search-box input::placeholder { color: var(--gray-400); }
+
+    /* ───── FILTER CHIPS ───── */
+    .filter-wrap {
+      display: flex; gap: 8px; padding: 10px 20px;
+      overflow-x: auto; background: var(--white);
+      scrollbar-width: none;
+    }
+    .filter-wrap::-webkit-scrollbar { display: none; }
+    .chip {
+      flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      border: 1.5px solid var(--gray-200); color: var(--gray-600);
+      background: var(--white); transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .chip.active { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+    /* ───── MAP ───── */
+    .map-section { position: relative; }
+    #map {
+      width: 100%; height: 260px;
+      background: #E8F0E8;
+      position: relative; overflow: hidden;
+    }
+    .map-placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; color: var(--gray-400);
+      background: linear-gradient(135deg, #f0f4f0 0%, #e4ece4 100%);
+    }
+    .map-placeholder-icon { font-size: 32px; }
+    .map-placeholder-text { font-size: 13px; font-weight: 500; }
+
+    /* Map markers */
+    .map-markers { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .marker {
+      position: absolute; width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: transform 0.15s; z-index: 10;
+      border: 2.5px solid white;
+    }
+    .marker:hover { transform: scale(1.15); }
+    .marker.hospital { background: var(--blue); }
+    .marker.pharmacy { background: var(--green); }
+    .marker.closed { background: var(--gray-400); opacity: 0.7; }
+    .marker.selected { transform: scale(1.2); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+
+    .my-location {
+      position: absolute; width: 14px; height: 14px; border-radius: 50%;
+      background: var(--blue); border: 3px solid white;
+      box-shadow: 0 0 0 4px rgba(49,130,246,0.2);
+      z-index: 20;
+    }
+
+    /* Map controls */
+    .map-ctrl {
+      position: absolute; right: 12px; bottom: 12px; z-index: 30;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .map-ctrl-btn {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: white; border: none; cursor: pointer;
+      font-size: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Map legend */
+    .map-legend {
+      position: absolute; left: 12px; bottom: 12px; z-index: 30;
+      background: white; border-radius: 8px; padding: 8px 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--gray-600); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ───── LIST SECTION ───── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 8px;
+    }
+    .section-title { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+    .section-count { font-size: 13px; color: var(--gray-400); }
+
+    /* ───── PLACE CARD ───── */
+    .place-list { padding: 0 20px 100px; display: flex; flex-direction: column; gap: 10px; }
+
+    .place-card {
+      background: var(--white); border-radius: var(--radius-lg);
+      padding: 16px; cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      transition: all 0.15s; border: 1.5px solid transparent;
+      animation: fadeUp 0.3s ease both;
+    }
+    .place-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-1px); }
+    .place-card.selected { border-color: var(--primary); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .card-left { display: flex; gap: 10px; flex: 1; min-width: 0; }
+
+    .place-icon {
+      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .place-icon.hospital { background: var(--blue-light); }
+    .place-icon.pharmacy { background: var(--green-light); }
+
+    .place-info { flex: 1; min-width: 0; }
+    .place-name {
+      font-size: 15px; font-weight: 700; color: var(--gray-900);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .place-type { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+    .status-badge {
+      flex-shrink: 0; padding: 4px 8px; border-radius: 6px;
+      font-size: 12px; font-weight: 600;
+    }
+    .status-badge.open { background: var(--green-light); color: var(--green); }
+    .status-badge.closed { background: var(--gray-100); color: var(--gray-400); }
+
+    .card-divider { height: 1px; background: var(--gray-100); margin: 12px 0; }
+
+    .card-bottom { display: flex; align-items: center; justify-content: space-between; }
+    .card-meta { display: flex; align-items: center; gap: 12px; }
+    .meta-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--gray-600); }
+
+    .card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+    .tag {
+      padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;
+      background: var(--gray-100); color: var(--gray-600);
+    }
+    .tag.holiday { background: var(--primary-light); color: var(--primary); }
+    .tag.night { background: #EEF2FF; color: #4F46E5; }
+    .tag.emergency { background: var(--red-light); color: var(--red); }
+
+    /* ───── CALL BTN ───── */
+    .call-btn {
+      display: flex; align-items: center; gap: 4px;
+      padding: 6px 12px; border-radius: 8px;
+      background: var(--blue-light); color: var(--blue);
+      font-size: 12px; font-weight: 600; border: none; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .call-btn:hover { background: var(--blue); color: white; }
+
+    /* ───── BOTTOM TABS ───── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 375px; background: white; border-top: 1px solid var(--gray-100);
+      display: flex; padding: 8px 0 20px; z-index: 100;
+    }
+    .bottom-tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 3px; font-size: 10px; font-weight: 500;
+      color: var(--gray-400); cursor: pointer; padding: 4px 0;
+      transition: color 0.15s;
+    }
+    .bottom-tab.active { color: var(--primary); }
+    .bottom-tab svg { width: 22px; height: 22px; }
+
+    /* ───── DETAIL SHEET ───── */
+    .sheet-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .sheet-overlay.show { opacity: 1; pointer-events: all; }
+
+    .sheet {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%);
+      width: 375px; background: white; border-radius: 20px 20px 0 0;
+      z-index: 201; padding: 0 0 40px; max-height: 80vh; overflow-y: auto;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .sheet.show { transform: translateX(-50%) translateY(0); }
+
+    .sheet-handle { width: 32px; height: 4px; background: var(--gray-200); border-radius: 2px; margin: 12px auto 16px; }
+    .sheet-content { padding: 0 20px; }
+
+    .sheet-header { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+    .sheet-icon { width: 52px; height: 52px; border-radius: 14px; font-size: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sheet-title { font-size: 18px; font-weight: 700; }
+    .sheet-subtitle { font-size: 13px; color: var(--gray-600); margin-top: 3px; }
+
+    .sheet-section { margin-bottom: 16px; }
+    .sheet-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+    .sheet-row:last-child { border-bottom: none; }
+    .sheet-row-icon { width: 20px; color: var(--gray-400); flex-shrink: 0; margin-top: 1px; }
+    .sheet-row-text { font-size: 14px; color: var(--gray-800); line-height: 1.5; }
+    .sheet-row-label { font-size: 12px; color: var(--gray-400); }
+
+    .sheet-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .sheet-btn {
+      flex: 1; padding: 14px; border-radius: 12px; border: none;
+      font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .sheet-btn.primary { background: var(--primary); color: white; }
+    .sheet-btn.secondary { background: var(--gray-100); color: var(--gray-800); }
+
+    /* ───── LOADING / EMPTY ───── */
+    .loading-wrap { padding: 40px 20px; text-align: center; }
+    .loading-spinner {
+      width: 28px; height: 28px; border: 3px solid var(--gray-200);
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: var(--gray-400); }
+
+    .empty-wrap { padding: 48px 20px; text-align: center; }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-title { font-size: 15px; font-weight: 600; color: var(--gray-800); margin-bottom: 6px; }
+    .empty-desc { font-size: 13px; color: var(--gray-400); }
+
+    /* ───── LOCATION BTN ───── */
+    .location-btn {
+      position: absolute; right: 12px; top: 12px; z-index: 30;
+      width: 36px; height: 36px; border-radius: 8px;
+      background: white; border: none; cursor: pointer; font-size: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .location-btn.loading { animation: spin 1s linear infinite; }
+
+    /* ───── TOAST ───── */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--gray-900); color: white; padding: 10px 20px;
+      border-radius: 20px; font-size: 13px; font-weight: 500;
+      opacity: 0; transition: all 0.25s; pointer-events: none; z-index: 300;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="nav">
+  <div class="nav-title">아플땐 여기 🏥</div>
+  <div class="nav-subtitle" id="location-label">위치를 불러오는 중...</div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="setTab('all')">전체</button>
+  <button class="tab-btn" onclick="setTab('hospital')">병원</button>
+  <button class="tab-btn" onclick="setTab('pharmacy')">약국</button>
+</div>
+
+<!-- SEARCH -->
+<div class="search-wrap">
+  <div class="search-box">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="text" id="search-input" placeholder="병원, 약국 이름으로 검색" oninput="onSearch(this.value)">
+  </div>
+</div>
+
+<!-- FILTER CHIPS -->
+<div class="filter-wrap">
+  <button class="chip active" onclick="toggleFilter(this, 'open')">🟢 운영중</button>
+  <button class="chip" onclick="toggleFilter(this, 'holiday')">📅 휴일운영</button>
+  <button class="chip" onclick="toggleFilter(this, 'night')">🌙 야간진료</button>
+  <button class="chip" onclick="toggleFilter(this, 'emergency')">🚨 응급실</button>
+</div>
+
+<!-- MAP -->
+<div class="map-section">
+  <div id="map">
+    <div class="map-placeholder">
+      <div class="map-placeholder-icon">🗺️</div>
+      <div class="map-placeholder-text">지도를 불러오는 중...</div>
+    </div>
+    <div class="map-markers" id="map-markers"></div>
+    <div class="my-location" id="my-marker" style="display:none"></div>
+    <button class="location-btn" id="location-btn" onclick="getCurrentLocation()" title="내 위치">📍</button>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>병원 운영중</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>약국 운영중</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--gray-400)"></div>운영 종료</div>
+    </div>
+  </div>
+</div>
+
+<!-- LIST -->
+<div class="section-header">
+  <span class="section-title">주변 의료기관</span>
+  <span class="section-count" id="count-label">불러오는 중...</span>
+</div>
+
+<div id="place-list" class="place-list">
+  <div class="loading-wrap">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">주변 병원·약국을 찾고 있어요</div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="bottom-tab active">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+    </svg>홈
+  </div>
+  <div class="bottom-tab">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>검색
+  </div>
+  <div class="bottom-tab">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>즐겨찾기
+  </div>
+  <div class="bottom-tab">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>내 정보
+  </div>
+</div>
+
+<!-- DETAIL SHEET -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="detail-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-content" id="sheet-content"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ──────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────
+let allPlaces = [];
+let filtered = [];
+let activeTab = 'all';
+let activeFilters = new Set(['open']);
+let searchQuery = '';
+let userLat = 37.5665, userLng = 126.9780; // 서울 기본값
+let mapBounds = { minLat: 0, maxLat: 0, minLng: 0, maxLng: 0 };
+
+// ──────────────────────────────────────────────
+// MOCK DATA (공공데이터 API 응답 형태 모방)
+// ──────────────────────────────────────────────
+const MOCK_PLACES = [
+  { id:1, type:'hospital', name:'연세세브란스병원 응급의료센터', addr:'서울 서대문구 연세로 50-1', phone:'02-2228-5800', lat:37.5621, lng:126.9395, dept:'응급의학과', isOpen:true, isHoliday:true, isNight:true, isEmergency:true, hours:'24시간', dist:0.4 },
+  { id:2, type:'hospital', name:'강남성심병원', addr:'서울 영등포구 신길로 1', phone:'02-2639-5000', lat:37.5194, lng:126.9069, dept:'내과·외과·정형외과', isOpen:true, isHoliday:false, isNight:true, isEmergency:false, hours:'09:00~22:00', dist:0.8 },
+  { id:3, type:'pharmacy', name:'온누리약국', addr:'서울 마포구 독막로 123', phone:'02-325-4567', lat:37.5490, lng:126.9107, isOpen:true, isHoliday:true, isNight:false, isEmergency:false, hours:'09:00~22:00', dist:1.1 },
+  { id:4, type:'hospital', name:'을지로내과의원', addr:'서울 중구 을지로 120', phone:'02-777-2200', lat:37.5660, lng:126.9944, dept:'내과·가정의학과', isOpen:false, isHoliday:false, isNight:false, isEmergency:false, hours:'09:00~18:00', dist:1.4 },
+  { id:5, type:'pharmacy', name:'24시 해피약국', addr:'서울 마포구 와우산로 21', phone:'02-333-8899', lat:37.5505, lng:126.9235, isOpen:true, isHoliday:true, isNight:true, isEmergency:false, hours:'24시간', dist:1.6 },
+  { id:6, type:'hospital', name:'홍대소아청소년과', addr:'서울 마포구 홍익로 10', phone:'02-322-5500', lat:37.5571, lng:126.9257, dept:'소아청소년과', isOpen:false, isHoliday:false, isNight:false, isEmergency:false, hours:'09:30~18:30', dist:2.0 },
+  { id:7, type:'pharmacy', name:'서울대입구약국', addr:'서울 관악구 관악로 145', phone:'02-877-4455', lat:37.4811, lng:126.9527, isOpen:true, isHoliday:false, isNight:false, isEmergency:false, hours:'09:00~21:00', dist:2.3 },
+  { id:8, type:'hospital', name:'강남차병원', addr:'서울 강남구 논현로 566', phone:'02-3468-3000', lat:37.5110, lng:127.0207, dept:'내과·산부인과·정형외과', isOpen:true, isHoliday:true, isNight:false, isEmergency:false, hours:'08:30~17:30', dist:3.1 },
+];
+
+// ──────────────────────────────────────────────
+// GEOLOCATION
+// ──────────────────────────────────────────────
+function getCurrentLocation() {
+  const btn = document.getElementById('location-btn');
+  btn.classList.add('loading');
+  btn.textContent = '⏳';
+
+  if (!navigator.geolocation) {
+    showToast('위치 서비스를 지원하지 않는 브라우저예요');
+    loadWithLocation(userLat, userLng);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      btn.classList.remove('loading');
+      btn.textContent = '📍';
+      document.getElementById('location-label').textContent = '현재 위치 기준';
+      loadWithLocation(userLat, userLng);
+      showToast('현재 위치를 불러왔어요');
+    },
+    () => {
+      btn.classList.remove('loading');
+      btn.textContent = '📍';
+      document.getElementById('location-label').textContent = '서울 기준 (위치 허용 필요)';
+      showToast('위치 권한이 필요해요. 기본 위치로 표시합니다');
+      loadWithLocation(userLat, userLng);
+    },
+    { timeout: 8000 }
+  );
+}
+
+// ──────────────────────────────────────────────
+// PUBLIC DATA API (공공데이터포털 활용)
+// 실제 서비스시 API키 발급 후 아래 함수 대체
+// ──────────────────────────────────────────────
+async function fetchFromPublicAPI(lat, lng) {
+  // 공공데이터포털 보건의료빅데이터개방시스템 API 예시 구조
+  // 실제 API: https://apis.data.go.kr/B551182/MadmDtlInfoService2
+  //            https://apis.data.go.kr/B551182/prescDrugService
+  //
+  // const API_KEY = 'YOUR_API_KEY';
+  // const url = `https://apis.data.go.kr/B551182/MadmDtlInfoService2/getDtlInfo2
+  //   ?ServiceKey=${API_KEY}&WGS84_LAT=${lat}&WGS84_LON=${lng}&pageNo=1&numOfRows=20`;
+  //
+  // API가 미설정 상태이므로 MOCK 데이터 반환
+  await new Promise(r => setTimeout(r, 800));
+  return MOCK_PLACES.map(p => ({
+    ...p,
+    dist: calcDist(lat, lng, p.lat, p.lng),
+  })).sort((a, b) => a.dist - b.dist);
+}
+
+function calcDist(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return +(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1);
+}
+
+// ──────────────────────────────────────────────
+// LOAD
+// ──────────────────────────────────────────────
+async function loadWithLocation(lat, lng) {
+  document.getElementById('place-list').innerHTML = `
+    <div class="loading-wrap">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">주변 병원·약국을 찾고 있어요</div>
+    </div>`;
+
+  try {
+    const data = await fetchFromPublicAPI(lat, lng);
+    allPlaces = data;
+    computeMapBounds();
+    renderMap();
+    applyFilters();
+  } catch (e) {
+    document.getElementById('place-list').innerHTML = `
+      <div class="empty-wrap">
+        <div class="empty-icon">😔</div>
+        <div class="empty-title">데이터를 불러오지 못했어요</div>
+        <div class="empty-desc">잠시 후 다시 시도해 주세요</div>
+      </div>`;
+  }
+}
+
+// ──────────────────────────────────────────────
+// FILTER / SEARCH
+// ──────────────────────────────────────────────
+function setTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['all','hospital','pharmacy'][i] === tab);
+  });
+  applyFilters();
+}
+
+function toggleFilter(el, key) {
+  if (activeFilters.has(key)) activeFilters.delete(key);
+  else activeFilters.add(key);
+  el.classList.toggle('active');
+  applyFilters();
+}
+
+function onSearch(val) {
+  searchQuery = val.toLowerCase();
+  applyFilters();
+}
+
+function applyFilters() {
+  filtered = allPlaces.filter(p => {
+    if (activeTab !== 'all' && p.type !== activeTab) return false;
+    if (activeFilters.has('open') && !p.isOpen) return false;
+    if (activeFilters.has('holiday') && !p.isHoliday) return false;
+    if (activeFilters.has('night') && !p.isNight) return false;
+    if (activeFilters.has('emergency') && !p.isEmergency) return false;
+    if (searchQuery && !p.name.toLowerCase().includes(searchQuery) && !p.addr.toLowerCase().includes(searchQuery)) return false;
+    return true;
+  });
+  renderList();
+  updateMapMarkers();
+}
+
+// ──────────────────────────────────────────────
+// MAP RENDERING (CSS-based pseudo map)
+// ──────────────────────────────────────────────
+function computeMapBounds() {
+  const lats = allPlaces.map(p => p.lat);
+  const lngs = allPlaces.map(p => p.lng);
+  mapBounds = {
+    minLat: Math.min(...lats) - 0.01,
+    maxLat: Math.max(...lats) + 0.01,
+    minLng: Math.min(...lngs) - 0.01,
+    maxLng: Math.max(...lngs) + 0.01,
+  };
+}
+
+function latLngToXY(lat, lng, w, h) {
+  const x = ((lng - mapBounds.minLng) / (mapBounds.maxLng - mapBounds.minLng)) * (w - 40) + 20;
+  const y = ((mapBounds.maxLat - lat) / (mapBounds.maxLat - mapBounds.minLat)) * (h - 40) + 20;
+  return { x, y };
+}
+
+function renderMap() {
+  const mapEl = document.getElementById('map');
+  mapEl.innerHTML = `
+    <div style="width:100%;height:100%;background:linear-gradient(135deg,#EAF2EA 0%,#D8ECD8 100%);position:relative">
+      <!-- 도로 느낌 선들 -->
+      <svg width="100%" height="100%" style="position:absolute;top:0;left:0;opacity:0.4">
+        <line x1="0" y1="130" x2="375" y2="130" stroke="#C8D8C0" stroke-width="8"/>
+        <line x1="0" y1="90" x2="375" y2="100" stroke="#C8D8C0" stroke-width="4"/>
+        <line x1="120" y1="0" x2="130" y2="260" stroke="#C8D8C0" stroke-width="8"/>
+        <line x1="240" y1="0" x2="250" y2="260" stroke="#C8D8C0" stroke-width="4"/>
+        <line x1="60" y1="0" x2="80" y2="260" stroke="#C8D8C0" stroke-width="2"/>
+        <line x1="0" y1="180" x2="375" y2="175" stroke="#C8D8C0" stroke-width="4"/>
+      </svg>
+    </div>
+    <div class="map-markers" id="map-markers"></div>
+    <div class="my-location" id="my-marker"></div>
+    <button class="location-btn" id="location-btn" onclick="getCurrentLocation()" title="내 위치">📍</button>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>병원 운영중</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>약국 운영중</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--gray-400)"></div>운영 종료</div>
+    </div>
+  `;
+
+  // 내 위치 마커
+  const myMarker = document.getElementById('my-marker');
+  const myPos = latLngToXY(userLat, userLng, 375, 260);
+  myMarker.style.display = 'block';
+  myMarker.style.left = (myPos.x - 7) + 'px';
+  myMarker.style.top = (myPos.y - 7) + 'px';
+
+  updateMapMarkers();
+}
+
+function updateMapMarkers() {
+  const container = document.getElementById('map-markers');
+  if (!container) return;
+  container.innerHTML = '';
+
+  allPlaces.forEach(p => {
+    const inFilter = filtered.includes(p);
+    const pos = latLngToXY(p.lat, p.lng, 375, 260);
+    const div = document.createElement('div');
+    div.className = `marker ${p.type} ${!p.isOpen ? 'closed' : ''}`;
+    div.style.left = (pos.x - 18) + 'px';
+    div.style.top = (pos.y - 18) + 'px';
+    div.style.opacity = inFilter ? '1' : '0.3';
+    div.textContent = p.type === 'hospital' ? '🏥' : '💊';
+    div.title = p.name;
+    div.onclick = () => openSheet(p);
+    container.appendChild(div);
+  });
+}
+
+// ──────────────────────────────────────────────
+// LIST RENDERING
+// ──────────────────────────────────────────────
+function renderList() {
+  const el = document.getElementById('place-list');
+  document.getElementById('count-label').textContent = `${filtered.length}곳`;
+
+  if (filtered.length === 0) {
+    el.innerHTML = `
+      <div class="empty-wrap">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">검색 결과가 없어요</div>
+        <div class="empty-desc">다른 조건으로 검색해보세요</div>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map((p, i) => `
+    <div class="place-card" style="animation-delay:${i * 0.05}s" onclick="openSheet(${JSON.stringify(p).replace(/"/g,"'")})" data-id="${p.id}">
+      <div class="card-top">
+        <div class="card-left">
+          <div class="place-icon ${p.type}">${p.type === 'hospital' ? '🏥' : '💊'}</div>
+          <div class="place-info">
+            <div class="place-name">${p.name}</div>
+            <div class="place-type">${p.type === 'hospital' ? '병원' : '약국'} · ${p.hours}</div>
+          </div>
+        </div>
+        <span class="status-badge ${p.isOpen ? 'open' : 'closed'}">${p.isOpen ? '운영중' : '운영종료'}</span>
+      </div>
+      <div class="card-tags">
+        ${p.isHoliday ? '<span class="tag holiday">휴일운영</span>' : ''}
+        ${p.isNight ? '<span class="tag night">야간진료</span>' : ''}
+        ${p.isEmergency ? '<span class="tag emergency">응급실</span>' : ''}
+        ${p.dept ? `<span class="tag">${p.dept}</span>` : ''}
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-bottom">
+        <div class="card-meta">
+          <div class="meta-item">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            ${p.dist}km
+          </div>
+          <div class="meta-item">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+            </svg>
+            ${p.hours}
+          </div>
+        </div>
+        <button class="call-btn" onclick="event.stopPropagation(); callPlace('${p.phone}')">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.45 2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/>
+          </svg>
+          전화
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ──────────────────────────────────────────────
+// DETAIL SHEET
+// ──────────────────────────────────────────────
+function openSheet(p) {
+  // onclick에서 JSON 문자열로 넘어오는 경우 파싱
+  if (typeof p === 'string') {
+    try { p = JSON.parse(p.replace(/'/g, '"')); } catch(e) { return; }
+  }
+  const content = document.getElementById('sheet-content');
+  content.innerHTML = `
+    <div class="sheet-header">
+      <div class="sheet-icon ${p.type}">${p.type === 'hospital' ? '🏥' : '💊'}</div>
+      <div>
+        <div class="sheet-title">${p.name}</div>
+        <div class="sheet-subtitle">${p.type === 'hospital' ? '병원' : '약국'} · <span style="color:${p.isOpen ? 'var(--green)' : 'var(--gray-400)'}; font-weight:600">${p.isOpen ? '운영중' : '운영종료'}</span></div>
+      </div>
+    </div>
+    <div class="card-tags" style="margin-bottom:16px">
+      ${p.isHoliday ? '<span class="tag holiday">휴일운영</span>' : ''}
+      ${p.isNight ? '<span class="tag night">야간진료</span>' : ''}
+      ${p.isEmergency ? '<span class="tag emergency">응급실</span>' : ''}
+      ${p.dept ? `<span class="tag">${p.dept}</span>` : ''}
+    </div>
+    <div class="sheet-section">
+      <div class="sheet-row">
+        <div class="sheet-row-icon">📍</div>
+        <div>
+          <div class="sheet-row-label">주소</div>
+          <div class="sheet-row-text">${p.addr}</div>
+        </div>
+      </div>
+      <div class="sheet-row">
+        <div class="sheet-row-icon">🕐</div>
+        <div>
+          <div class="sheet-row-label">운영시간</div>
+          <div class="sheet-row-text">${p.hours}</div>
+        </div>
+      </div>
+      <div class="sheet-row">
+        <div class="sheet-row-icon">📞</div>
+        <div>
+          <div class="sheet-row-label">전화번호</div>
+          <div class="sheet-row-text">${p.phone}</div>
+        </div>
+      </div>
+      <div class="sheet-row">
+        <div class="sheet-row-icon">📏</div>
+        <div>
+          <div class="sheet-row-label">현재 위치에서</div>
+          <div class="sheet-row-text">${p.dist}km</div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="sheet-btn primary" onclick="callPlace('${p.phone}')">📞 전화하기</button>
+      <button class="sheet-btn secondary" onclick="showToast('지도 앱 연결은 실제 앱에서 가능해요')">🗺️ 길찾기</button>
+    </div>
+  `;
+  document.getElementById('sheet-overlay').classList.add('show');
+  document.getElementById('detail-sheet').classList.add('show');
+}
+
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('show');
+  document.getElementById('detail-sheet').classList.remove('show');
+}
+
+// ──────────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────────
+function callPlace(phone) {
+  showToast(`${phone} 로 전화를 연결해요`);
+  window.location.href = `tel:${phone}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ──────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  getCurrentLocation();
+});
+</script>
+</body>
+</html>
