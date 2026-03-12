@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>아플땐 여기</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --blue:#3182F6;--blue-light:#EBF3FE;
+  --green:#00B493;--green-light:#E8FAF6;
+  --red:#F04452;--red-light:#FEF0F1;
+  --gray-50:#F9FAFB;--gray-100:#F2F4F6;--gray-200:#E5E8EB;
+  --gray-400:#9EA6B2;--gray-600:#6B7684;--gray-800:#333D4B;--gray-900:#191F28;
+  --primary:#fb8890;--primary-light:#FFF0F1;--white:#FFFFFF;
+}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--gray-50);color:var(--gray-900);max-width:375px;margin:0 auto;min-height:100vh;overflow-x:hidden}
+.nav{position:sticky;top:0;z-index:100;background:var(--white);padding:16px 20px 12px;border-bottom:1px solid var(--gray-100)}
+.nav-title{font-size:18px;font-weight:700}
+.nav-sub{font-size:12px;color:var(--gray-400);margin-top:2px}
+.selector-wrap{background:var(--white);padding:14px 20px;border-bottom:1px solid var(--gray-100);display:flex;gap:8px}
+.sel-box{flex:1;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:10px;font-size:14px;font-family:inherit;color:var(--gray-900);background:var(--white);cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239EA6B2' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.sel-box:focus{outline:none;border-color:var(--primary)}
+.sel-box:disabled{opacity:0.5;cursor:not-allowed}
+.type-tabs{display:flex;background:var(--white);border-bottom:1px solid var(--gray-100);padding:0 20px}
+.type-tab{flex:1;padding:11px 0;font-size:14px;font-weight:600;color:var(--gray-400);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.type-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.dept-wrap{padding:10px 20px;background:var(--white);border-bottom:1px solid var(--gray-100);display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.dept-wrap::-webkit-scrollbar{display:none}
+.dept-chip{flex-shrink:0;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--gray-200);color:var(--gray-600);background:var(--white);cursor:pointer;white-space:nowrap;transition:all .15s}
+.dept-chip.active{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+.option-wrap{padding:8px 20px;background:var(--white);border-bottom:1px solid var(--gray-100);display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.option-wrap::-webkit-scrollbar{display:none}
+.opt-chip{flex-shrink:0;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--gray-200);color:var(--gray-600);background:var(--white);cursor:pointer;transition:all .15s}
+.opt-chip.active{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.map-wrap{position:relative;height:260px;background:#e8efe8;overflow:hidden}
+#kakao-map{width:100%;height:100%}
+.map-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#e8efe8;z-index:5;pointer-events:none}
+.map-spinner{width:24px;height:24px;border:3px solid var(--gray-200);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+.map-count{position:absolute;right:10px;top:10px;background:white;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;color:var(--gray-800);box-shadow:0 2px 8px rgba(0,0,0,.1);z-index:10;display:none}
+.list-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 8px}
+.list-title{font-size:15px;font-weight:700}
+.list-count{font-size:12px;color:var(--gray-400)}
+.place-list{padding:0 20px 100px;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--white);border-radius:14px;padding:14px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:all .15s;border:1.5px solid transparent;animation:fadeUp .25s ease both}
+.card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1);transform:translateY(-1px)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.card-top{display:flex;align-items:flex-start;gap:10px}
+.place-icon{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px}
+.place-icon.hospital{background:var(--blue-light)}
+.place-icon.pharmacy{background:var(--green-light)}
+.place-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place-type{font-size:11px;color:var(--gray-400);margin-top:2px}
+.card-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.tag{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:500;background:var(--gray-100);color:var(--gray-600)}
+.tag.holiday{background:var(--primary-light);color:var(--primary)}
+.tag.night{background:#EEF2FF;color:#4F46E5}
+.tag.emergency{background:var(--red-light);color:var(--red)}
+.card-divider{height:1px;background:var(--gray-100);margin:10px 0}
+.card-bottom{display:flex;align-items:center;justify-content:space-between}
+.meta-row{display:flex;gap:10px}
+.meta-item{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--gray-600)}
+.call-btn{display:flex;align-items:center;gap:3px;padding:5px 10px;border-radius:7px;background:var(--blue-light);color:var(--blue);font-size:11px;font-weight:600;border:none;cursor:pointer}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:375px;background:white;border-top:1px solid var(--gray-100);display:flex;padding:8px 0 20px;z-index:100}
+.bot-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:500;color:var(--gray-400);cursor:pointer;padding:4px 0}
+.bot-tab.active{color:var(--primary)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.show{opacity:1;pointer-events:all}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:375px;background:white;border-radius:20px 20px 0 0;z-index:201;padding:0 0 40px;max-height:80vh;overflow-y:auto;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.sheet.show{transform:translateX(-50%) translateY(0)}
+.sheet-handle{width:32px;height:4px;background:var(--gray-200);border-radius:2px;margin:12px auto 16px}
+.sheet-body{padding:0 20px}
+.sh-header{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+.sh-icon{width:50px;height:50px;border-radius:13px;font-size:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sh-title{font-size:17px;font-weight:700}
+.sh-sub{font-size:12px;color:var(--gray-600);margin-top:3px}
+.sh-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--gray-100)}
+.sh-row:last-child{border-bottom:none}
+.sh-icon-sm{font-size:14px;flex-shrink:0;margin-top:1px}
+.sh-text{font-size:13px;color:var(--gray-800);line-height:1.5}
+.sh-label{font-size:11px;color:var(--gray-400)}
+.sh-actions{display:flex;gap:8px;margin-top:16px}
+.sh-btn{flex:1;padding:13px;border-radius:11px;border:none;font-size:14px;font-weight:600;cursor:pointer}
+.sh-btn.pri{background:var(--primary);color:white}
+.sh-btn.sec{background:var(--gray-100);color:var(--gray-800)}
+.loading-wrap{padding:40px 20px;text-align:center}
+.spinner{width:26px;height:26px;border:3px solid var(--gray-200);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+.loading-txt{font-size:13px;color:var(--gray-400)}
+.empty-wrap,.guide-wrap{padding:44px 20px;text-align:center}
+.empty-icon,.guide-icon{font-size:36px;margin-bottom:10px}
+.empty-title,.guide-title{font-size:14px;font-weight:600;color:var(--gray-800);margin-bottom:5px}
+.empty-desc,.guide-desc{font-size:12px;color:var(--gray-400);line-height:1.6}
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--gray-900);color:white;padding:9px 18px;border-radius:18px;font-size:13px;font-weight:500;opacity:0;transition:all .25s;pointer-events:none;z-index:300;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-title">아플땐 여기 🏥</div>
+  <div class="nav-sub" id="nav-sub">데이터 로딩 중...</div>
+</div>
+
+<div class="selector-wrap">
+  <select class="sel-box" id="sido-sel"><option value="서울">서울특별시</option></select>
+  <select class="sel-box" id="gu-sel" onchange="onGuChange()" disabled>
+    <option value="">구 선택</option>
+  </select>
+</div>
+
+<div class="type-tabs">
+  <button class="type-tab active" onclick="setType('all',this)">전체</button>
+  <button class="type-tab" onclick="setType('hospital',this)">병원</button>
+  <button class="type-tab" onclick="setType('pharmacy',this)">약국</button>
+</div>
+
+<div class="dept-wrap" id="dept-wrap">
+  <button class="dept-chip active" onclick="setDept('',this)">전체 진료과</button>
+</div>
+
+<div class="option-wrap">
+  <button class="opt-chip" onclick="toggleOpt(this,'holiday')">📅 휴일운영</button>
+  <button class="opt-chip" onclick="toggleOpt(this,'night')">🌙 야간진료</button>
+  <button class="opt-chip" onclick="toggleOpt(this,'emergency')">🚨 응급실</button>
+</div>
+
+<div class="map-wrap">
+  <div id="kakao-map"></div>
+  <div class="map-loading" id="map-loading">
+    <div class="map-spinner"></div>
+    <div style="font-size:12px;color:var(--gray-600)">구를 선택하면 지도가 나타나요</div>
+  </div>
+  <div class="map-count" id="map-count"></div>
+</div>
+
+<div class="list-header">
+  <span class="list-title">의료기관 목록</span>
+  <span class="list-count" id="list-count"></span>
+</div>
+<div id="place-list" class="place-list">
+  <div class="loading-wrap">
+    <div class="spinner"></div>
+    <div class="loading-txt">데이터를 불러오는 중이에요</div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <div class="bot-tab active">
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/></svg>홈
+  </div>
+  <div class="bot-tab">
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>검색
+  </div>
+  <div class="bot-tab">
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>즐겨찾기
+  </div>
+  <div class="bot-tab">
+    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>내 정보
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-body" id="sheet-body"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var MAIN_DEPTS = ['내과','외과','정형외과','소아청소년과','산부인과','피부과','안과','이비인후과','신경과','정신건강의학과','치과','한방내과','응급의학과','재활의학과','성형외과','비뇨의학과'];
+var GU_LIST = ['강남구','강동구','강북구','강서구','관악구','광진구','구로구','금천구','노원구','도봉구','동대문구','동작구','마포구','서대문구','서초구','성동구','성북구','송파구','양천구','영등포구','용산구','은평구','종로구','중구','중랑구'];
+
+var GU_DATA = null;
+var map = null;
+var markers = [];
+var currentGu = '';
+var currentType = 'all';
+var currentDept = '';
+var activeOpts = new Set();
+var guPlaces = [];
+var filtered = [];
+var showPlaces = [];
+
+// 구 목록 초기화
+var guSel = document.getElementById('gu-sel');
+GU_LIST.forEach(function(g) {
+  var opt = document.createElement('option');
+  opt.value = g; opt.textContent = g;
+  guSel.appendChild(opt);
+});
+
+// 데이터 먼저 로드
+fetch('seoul_places.json')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    GU_DATA = data;
+    // 카카오맵 SDK 동적 로드
+    var script = document.createElement('script');
+    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=4704a3ddc412870a23bd0fff32126e4c&autoload=false';
+    script.onload = function() {
+      kakao.maps.load(function() {
+        var container = document.getElementById('kakao-map');
+        map = new kakao.maps.Map(container, {
+          center: new kakao.maps.LatLng(37.5665, 126.9780),
+          level: 8
+        });
+        document.getElementById('nav-sub').textContent = '서울시 구를 선택해주세요';
+        document.getElementById('gu-sel').disabled = false;
+        document.getElementById('place-list').innerHTML =
+          '<div class="guide-wrap">' +
+          '<div class="guide-icon">🗺️</div>' +
+          '<div class="guide-title">구를 선택해주세요</div>' +
+          '<div class="guide-desc">서울시 구를 선택하면<br>해당 지역의 병원·약국 정보를 볼 수 있어요</div>' +
+          '</div>';
+      });
+    };
+    script.onerror = function() {
+      document.getElementById('nav-sub').textContent = '지도 로드 실패 - 새로고침 해주세요';
+    };
+    document.head.appendChild(script);
+  })
+  .catch(function(err) {
+    console.error(err);
+    document.getElementById('nav-sub').textContent = '데이터 로드 실패 - 새로고침 해주세요';
+  });
+
+function onGuChange() {
+  if (!GU_DATA) return;
+  var gu = document.getElementById('gu-sel').value;
+  if (!gu) return;
+  currentGu = gu;
+  document.getElementById('nav-sub').textContent = '서울 ' + gu + ' 기준';
+  guPlaces = GU_DATA[gu] || [];
+  buildDeptChips();
+  applyFilter();
+  document.getElementById('map-loading').style.display = 'none';
+}
+
+function setType(t, el) {
+  currentType = t;
+  document.querySelectorAll('.type-tab').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('dept-wrap').style.display = t === 'pharmacy' ? 'none' : 'flex';
+  applyFilter();
+}
+
+function buildDeptChips() {
+  var wrap = document.getElementById('dept-wrap');
+  var allDepts = new Set();
+  guPlaces.forEach(function(p) { (p.depts || []).forEach(function(d) { allDepts.add(d); }); });
+  var show = MAIN_DEPTS.filter(function(d) { return allDepts.has(d); });
+  wrap.innerHTML = '<button class="dept-chip active" onclick="setDept(\'\',this)">전체 진료과</button>';
+  show.forEach(function(d) {
+    var b = document.createElement('button');
+    b.className = 'dept-chip';
+    b.textContent = d;
+    b.onclick = function() { setDept(d, b); };
+    wrap.appendChild(b);
+  });
+  currentDept = '';
+}
+
+function setDept(d, el) {
+  currentDept = d;
+  document.querySelectorAll('.dept-chip').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  applyFilter();
+}
+
+function toggleOpt(el, key) {
+  activeOpts.has(key) ? activeOpts.delete(key) : activeOpts.add(key);
+  el.classList.toggle('active');
+  applyFilter();
+}
+
+function applyFilter() {
+  if (!currentGu) return;
+  filtered = guPlaces.filter(function(p) {
+    if (currentType !== 'all' && p.type !== currentType) return false;
+    if (currentDept && !(p.depts || []).includes(currentDept)) return false;
+    if (activeOpts.has('holiday') && !p.isHoliday) return false;
+    if (activeOpts.has('night') && !p.isNight) return false;
+    if (activeOpts.has('emergency') && !p.isEmergency) return false;
+    return true;
+  });
+  renderMap();
+  renderList();
+}
+
+function renderMap() {
+  if (!map) return;
+  markers.forEach(function(m) { m.setMap(null); });
+  markers = [];
+  if (!filtered.length) { document.getElementById('map-count').style.display='none'; return; }
+
+  var toShow = filtered.slice(0, 500);
+  var bounds = new kakao.maps.LatLngBounds();
+
+  toShow.forEach(function(p) {
+    var pos = new kakao.maps.LatLng(p.lat, p.lng);
+    bounds.extend(pos);
+    var color = p.type === 'hospital' ? '#3182F6' : '#00B493';
+    var el = document.createElement('div');
+    el.style.cssText = 'width:12px;height:12px;background:' + color + ';border:2px solid white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer';
+    (function(place) {
+      el.addEventListener('click', function() { openSheetById(place.id); });
+    })(p);
+    var overlay = new kakao.maps.CustomOverlay({ position:pos, content:el, zIndex:3 });
+    overlay.setMap(map);
+    markers.push(overlay);
+  });
+
+  map.setBounds(bounds);
+  var cnt = document.getElementById('map-count');
+  cnt.style.display = 'block';
+  cnt.textContent = filtered.length > 500
+    ? filtered.length.toLocaleString() + '곳 중 500개 표시'
+    : filtered.length.toLocaleString() + '곳';
+}
+
+function renderList() {
+  var el = document.getElementById('place-list');
+  document.getElementById('list-count').textContent = filtered.length.toLocaleString() + '곳';
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-wrap"><div class="empty-icon">🔍</div><div class="empty-title">검색 결과가 없어요</div><div class="empty-desc">다른 조건으로 검색해보세요</div></div>';
+    return;
+  }
+  showPlaces = filtered.slice(0, 100);
+  el.innerHTML = showPlaces.map(function(p, i) {
+    var depts = (p.depts || []).slice(0,3).join(' · ');
+    var hrs = p.hours && p.hours.mon ? '평일 ' + p.hours.mon : '';
+    return '<div class="card" style="animation-delay:' + Math.min(i,20)*0.03 + 's" onclick="openSheet(' + i + ')">' +
+      '<div class="card-top">' +
+        '<div class="place-icon ' + p.type + '">' + (p.type==='hospital'?'🏥':'💊') + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="place-name">' + p.name + '</div>' +
+          '<div class="place-type">' + p.typeName + (depts?' · '+depts:'') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card-tags">' +
+        (p.isHoliday?'<span class="tag holiday">휴일운영</span>':'') +
+        (p.isNight?'<span class="tag night">야간진료</span>':'') +
+        (p.isEmergency?'<span class="tag emergency">응급실</span>':'') +
+      '</div>' +
+      '<div class="card-divider"></div>' +
+      '<div class="card-bottom">' +
+        '<div class="meta-row">' +
+          '<div class="meta-item">📍 ' + p.sigungu + '</div>' +
+          (hrs?'<div class="meta-item">🕐 ' + hrs + '</div>':'') +
+        '</div>' +
+        (p.phone?'<button class="call-btn" onclick="event.stopPropagation();callPlace(\'' + p.phone + '\')">📞 전화</button>':'') +
+      '</div>' +
+    '</div>';
+  }).join('');
+  if (filtered.length > 100) {
+    el.innerHTML += '<div style="text-align:center;padding:16px;font-size:12px;color:var(--gray-400)">상위 100개만 표시돼요. 필터로 좁혀보세요.</div>';
+  }
+}
+
+function openSheetById(id) {
+  var p = filtered.find(function(x) { return x.id === id; });
+  if (p) openSheetData(p);
+}
+
+function openSheet(idx) {
+  openSheetData(showPlaces[idx]);
+}
+
+function openSheetData(p) {
+  if (!p) return;
+  var depts = (p.depts || []).join(', ') || '정보 없음';
+  var h = p.hours || {};
+  document.getElementById('sheet-body').innerHTML =
+    '<div class="sh-header">' +
+      '<div class="sh-icon ' + p.type + '" style="background:' + (p.type==='hospital'?'var(--blue-light)':'var(--green-light)') + '">' + (p.type==='hospital'?'🏥':'💊') + '</div>' +
+      '<div><div class="sh-title">' + p.name + '</div><div class="sh-sub">' + p.typeName + '</div></div>' +
+    '</div>' +
+    '<div class="card-tags" style="margin-bottom:14px">' +
+      (p.isHoliday?'<span class="tag holiday">휴일운영</span>':'') +
+      (p.isNight?'<span class="tag night">야간진료</span>':'') +
+      (p.isEmergency?'<span class="tag emergency">응급실</span>':'') +
+    '</div>' +
+    '<div>' +
+      '<div class="sh-row"><span class="sh-icon-sm">📍</span><div><div class="sh-label">주소</div><div class="sh-text">' + p.addr + '</div></div></div>' +
+      (p.phone?'<div class="sh-row"><span class="sh-icon-sm">📞</span><div><div class="sh-label">전화번호</div><div class="sh-text">' + p.phone + '</div></div></div>':'') +
+      (p.depts&&p.depts.length?'<div class="sh-row"><span class="sh-icon-sm">🩺</span><div><div class="sh-label">진료과목</div><div class="sh-text">' + depts + '</div></div></div>':'') +
+      (h.mon?'<div class="sh-row"><span class="sh-icon-sm">🕐</span><div><div class="sh-label">평일 진료시간</div><div class="sh-text">' + h.mon + '</div></div></div>':'') +
+      (h.sat?'<div class="sh-row"><span class="sh-icon-sm">📅</span><div><div class="sh-label">토요일</div><div class="sh-text">' + h.sat + '</div></div></div>':'') +
+      (h.sun?'<div class="sh-row"><span class="sh-icon-sm">☀️</span><div><div class="sh-label">일요일</div><div class="sh-text">' + h.sun + '</div></div></div>':'') +
+    '</div>' +
+    '<div class="sh-actions">' +
+      (p.phone?'<button class="sh-btn pri" onclick="callPlace(\'' + p.phone + '\')">📞 전화하기</button>':'<button class="sh-btn pri" style="opacity:.4" disabled>전화번호 없음</button>') +
+      '<button class="sh-btn sec" onclick="openKakaoMap(' + p.lat + ',' + p.lng + ',\'' + p.name.replace(/'/g,"\'") + '\')">🗺️ 길찾기</button>' +
+    '</div>';
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+
+function closeSheet() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('sheet').classList.remove('show');
+}
+
+function callPlace(phone) {
+  toast(phone + '으로 전화 연결할게요');
+  window.location.href = 'tel:' + phone;
+}
+
+function openKakaoMap(lat, lng, name) {
+  window.open('https://map.kakao.com/link/to/' + encodeURIComponent(name) + ',' + lat + ',' + lng, '_blank');
+}
+
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2400);
+}
+</script>
+</body>
+</html>
